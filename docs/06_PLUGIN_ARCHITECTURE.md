@@ -13,13 +13,15 @@ Specify how AKWB can be extended to support new languages, frameworks, extractor
 Each plugin declares one or more ports it implements:
 
 1. **Detector:** Identifies project types and classifies files.
-2. **Parser:** Converts a source file into a normalized structural representation.
-3. **Extractor:** Derives `KnowledgeUnit` and `Relationship` objects from parsed content.
-4. **RelationshipBuilder:** Adds cross-file, cross-language, or inferred relationships after extraction.
-5. **ContextBuilder:** Produces AI context fragments from `KnowledgeUnit`s.
-6. **Reporter:** Generates human-readable reports from workspace artifacts.
-7. **Exporter:** Serializes graph or workspace data to external formats.
-8. **StorageBackend:** Persists artifacts (reserved for future storage backends).
+2. **Reader:** Converts a source artifact into `NormalizedContent` for non-document content (`text`, `binary`, `structured`, etc.).
+3. **DocumentReader:** The canonical parser contract for document artifacts. It emits a `CanonicalDocument` and requires no knowledge of downstream extraction. DOCX, PDF, HTML, email, and other document parsers implement this port.
+4. **Segmenter:** Splits `NormalizedContent` into `Segment`s.
+5. **Extractor:** Derives `KnowledgeUnit` and `Relationship` objects from parsed content.
+6. **RelationshipBuilder:** Adds cross-file, cross-language, or inferred relationships after extraction.
+7. **ContextBuilder:** Produces AI context fragments from `KnowledgeUnit`s.
+8. **Reporter:** Generates human-readable reports from workspace artifacts.
+9. **Exporter:** Serializes graph or workspace data to external formats.
+10. **StorageBackend:** Persists artifacts (reserved for future storage backends).
 
 ## Plugin Manifest (`plugin.yaml`)
 - `id`: reverse-DNS identifier.

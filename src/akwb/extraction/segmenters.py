@@ -303,7 +303,7 @@ class AdaptiveSegmenter(Segmenter):
     supported_content_kinds = (
         ContentKind.TEXT,
         ContentKind.STRUCTURED,
-        ContentKind.MARKDOWN,
+        ContentKind.DOCUMENT,
         ContentKind.BINARY,
         ContentKind.MULTIMODAL,
     )

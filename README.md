@@ -59,17 +59,12 @@ After analysis, the `.akwb/` workspace contains:
 │   └── source_catalog.jsonl
 ├── knowledge/
 │   ├── catalog.jsonl
-│   ├── graph.cypher
-│   ├── graph.dot
-│   ├── graph.jsonl
 │   ├── graph_edges.jsonl
 │   └── graph_nodes.jsonl
 ├── graph/
 │   ├── graph.cypher
 │   ├── graph.dot
-│   ├── graph.jsonl
-│   ├── graph_edges.jsonl
-│   └── graph_nodes.jsonl
+│   └── graph.jsonl
 ├── reports/
 │   ├── summary.md
 │   └── summary.json

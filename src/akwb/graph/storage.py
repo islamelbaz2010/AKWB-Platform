@@ -15,27 +15,56 @@ from akwb.types import Diagnostic, Result
 class LocalGraphStorage(GraphStorage):
     """Persist a KnowledgeGraph to the local ``.akwb`` workspace.
 
-    Produces:
+    Produces target-specific graph artifacts. By default the full set is:
     - ``graph.jsonl`` (combined nodes, edges, and metadata)
     - ``graph_nodes.jsonl``
     - ``graph_edges.jsonl``
     - ``graph.dot`` (GraphViz DOT)
     - ``graph.cypher`` (Neo4j Cypher)
+
+    When the target directory is ``graph/`` the combined, DOT, and Cypher files
+    are written. When the target directory is ``knowledge/`` only the node and
+    edge JSONL files are written. Other target directories receive all five.
     """
 
     def __init__(self, storage: StoragePort) -> None:
         self._storage = storage
 
     def save(self, graph: KnowledgeGraph, target: Any) -> Result[bool, Diagnostic]:
-        """Persist ``graph`` under the workspace-relative ``target`` directory."""
+        """Persist ``graph`` under the workspace-relative ``target`` directory.
+
+        The output is target-specific to avoid duplicating graph artifacts:
+
+        - ``graph/`` receives the combined ``graph.jsonl`` plus visual and query
+          exports (``graph.dot`` and ``graph.cypher``).
+        - ``knowledge/`` receives the node and edge JSONL files that the knowledge
+          layer consumes.
+        - Any other target directory receives all five files for backwards
+          compatibility.
+        """
         base = str(target) if target is not None else "graph"
+        # Use the directory name as a stable output-profile selector. This removes
+        # the previous duplication where both graph/ and knowledge/ contained the
+        # same combined/visual files.
+        if base == "graph":
+            formats = {"jsonl", "dot", "cypher"}
+        elif base == "knowledge":
+            formats = {"nodes", "edges"}
+        else:
+            formats = {"jsonl", "nodes", "edges", "dot", "cypher"}
+
         try:
             self._storage.ensure_dir(base)
-            self._write_jsonl(graph, base)
-            self._write_nodes_jsonl(graph, base)
-            self._write_edges_jsonl(graph, base)
-            self._write_dot(graph, base)
-            self._write_cypher(graph, base)
+            if "jsonl" in formats:
+                self._write_jsonl(graph, base)
+            if "nodes" in formats:
+                self._write_nodes_jsonl(graph, base)
+            if "edges" in formats:
+                self._write_edges_jsonl(graph, base)
+            if "dot" in formats:
+                self._write_dot(graph, base)
+            if "cypher" in formats:
+                self._write_cypher(graph, base)
         except Exception as exc:  # noqa: BLE001
             return Result.failure(
                 Diagnostic(

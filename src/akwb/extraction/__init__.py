@@ -10,6 +10,16 @@ from akwb.extraction.builders import (
     RegisteredTypeCandidateValidator,
     RequiredFieldsCandidateValidator,
 )
+from akwb.extraction.document import (
+    CanonicalDocument,
+    CanonicalElementType,
+    CanonicalSegmenter,
+    CanonicalValidationResult,
+    CanonicalValidator,
+    DocumentElement,
+    DocumentReader,
+    MarkdownCanonicalMapper,
+)
 from akwb.extraction.extractors import RuleBasedExtractor
 from akwb.extraction.markdown import (
     MarkdownASTMapper,
@@ -52,10 +62,17 @@ __all__ = [
     "AdaptiveSegmenter",
     "BinaryReader",
     "CandidateBuilder",
+    "CanonicalDocument",
+    "CanonicalElementType",
+    "CanonicalSegmenter",
+    "CanonicalValidationResult",
+    "CanonicalValidator",
     "CandidateValidator",
     "CodeSegmenter",
     "ContentKind",
     "DefaultKnowledgeObjectBuilder",
+    "DocumentElement",
+    "DocumentReader",
     "ExtractionCandidate",
     "ExtractionContext",
     "ExtractionPipeline",
@@ -65,6 +82,7 @@ __all__ = [
     "MarkdownASTMapper",
     "MarkdownASTVisitor",
     "MarkdownASTWalker",
+    "MarkdownCanonicalMapper",
     "MarkdownDocument",
     "MarkdownNode",
     "MarkdownParser",

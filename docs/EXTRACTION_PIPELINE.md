@@ -11,7 +11,9 @@ Artifact
     ↓
 Reader
     ↓
-NormalizedContent
+CanonicalDocument  (for document content) / NormalizedContent
+    ↓
+CanonicalValidator
     ↓
 Segmentation Engine
     ↓
@@ -32,8 +34,11 @@ KnowledgeFramework.validate_object
 
 ## Domain Model
 
-- `NormalizedContent` — a uniform wrapper around raw artifact content (text, binary, structured, multimodal).
-- `Segment` — a typed, contiguous fragment of normalized content: heading, paragraph, code, table, structural, semantic, adaptive.
+- `NormalizedContent` — a uniform wrapper around raw artifact content (text, binary, structured, document, multimodal). For document content it wraps a `CanonicalDocument`.
+- `CanonicalDocument` — the single parser-agnostic document AST built from `DocumentElement`s; produced by `DocumentReader` implementations, validated by `CanonicalValidator`, and segmented by `CanonicalSegmenter`.
+- `DocumentElement` — a typed, recursive node in a `CanonicalDocument`.
+- `CanonicalValidationResult` — the outcome of validating a `CanonicalDocument` before extraction.
+- `Segment` — a typed, contiguous fragment of normalized content: heading, paragraph, code, table, structural, semantic, adaptive, document.
 - `ExtractionCandidate` — a pre-object carrying a proposed knowledge type, title, description, content, source, evidence, and confidence.
 - `ExtractionResult` — the final bundle of `KnowledgeObject`s plus diagnostics and candidate count.
 
@@ -51,6 +56,7 @@ The pipeline exposes five plugin ports, all extending `PluginPort`:
 
 | Reader | MIME types | Output |
 |---|---|---|
+| `MarkdownReader` | `text/markdown`, `text/x-markdown` | `NormalizedContent(kind=DOCUMENT, content=CanonicalDocument)` |
 | `TextReader` | `text/*` | `NormalizedContent(kind=TEXT, content=str)` |
 | `BinaryReader` | `image/*`, `audio/*`, `video/*`, `application/octet-stream` | `NormalizedContent(kind=BINARY, content=bytes)` |
 | `StructuredReader` | `application/json`, `application/x-yaml`, `application/yaml`, `text/yaml` | `NormalizedContent(kind=STRUCTURED, content=dict/list)` |
@@ -65,7 +71,8 @@ The pipeline exposes five plugin ports, all extending `PluginPort`:
 | `TableSegmenter` | text | Markdown-style pipe tables. |
 | `StructuralSegmenter` | structured JSON/YAML | Recursively emits key/value and list-item segments. |
 | `SemanticSegmenter` | text | Sentence-level segments. |
-| `AdaptiveSegmenter` | all content kinds | Selects and runs the segmenters appropriate for the content kind. |
+| `AdaptiveSegmenter` | all content kinds | Selects and runs the segmenters appropriate for the content kind, including `CanonicalSegmenter` for `DOCUMENT` content. |
+| `CanonicalSegmenter` | document | Splits `CanonicalDocument` trees produced by `DocumentReader` implementations into `Segment`s. |
 
 ## Built-in Extractor
 
@@ -85,6 +92,21 @@ The pipeline exposes five plugin ports, all extending `PluginPort`:
 
 - `RequiredFieldsCandidateValidator` — ensures title and knowledge type are present.
 - `RegisteredTypeCandidateValidator` — ensures the knowledge type is registered in the `KnowledgeFramework`.
+
+## Canonical Validation Layer
+
+`CanonicalValidator` sits between the Reader and the segmentation stage. It is run automatically by `ExtractionPipeline` whenever a reader produces `NormalizedContent(kind=DOCUMENT)`.
+
+Responsibilities:
+
+- Verify the root object is a `CanonicalDocument` of type `document`.
+- Require `source_uri` and recommend `mime_type`.
+- Validate that every `DocumentElement` has a non-empty, unique `id`.
+- Validate element type and metadata shape.
+- Enforce the allowed element hierarchy (for example, `table` may only contain `table_row`, `table_head`, and `table_body`).
+- Reject malformed documents with clear diagnostics before extraction proceeds.
+
+The validation layer ensures the extraction pipeline can trust every `CanonicalDocument` it receives.
 
 ## Usage Example
 
@@ -119,6 +141,8 @@ for obj in result.objects:
 
 ## Plugin Example
 
+For CSV and other non-document artifacts, extend `Reader` directly:
+
 ```python
 from akwb.extraction.models import ContentKind, NormalizedContent
 from akwb.extraction.plugins import Reader
@@ -139,15 +163,40 @@ class CsvReader(Reader):
 #   api.register_port("reader", CsvReader())
 ```
 
+For document artifacts (HTML, DOCX, PDF, email, etc.), the only extension point is `DocumentReader`:
+
+```python
+from akwb.extraction.document import CanonicalDocument, DocumentElement, DocumentReader
+
+class HtmlReader(DocumentReader):
+    supported_mime_types = ("text/html",)
+
+    def read_canonical(self, artifact, content, context=None):
+        # Parse HTML into a CanonicalDocument tree.
+        return CanonicalDocument(
+            source_uri=artifact.relative_path or artifact.name,
+            mime_type=artifact.mime_type,
+            language="html",
+            children=[
+                DocumentElement(type="heading", level=1, content="Title"),
+                DocumentElement(type="paragraph", content="..."),
+            ],
+        )
+```
+
+A `DocumentReader` never needs to know about segmenters, extractors, or knowledge generation. If it emits a valid `CanonicalDocument`, the pipeline will validate, segment, and extract it automatically.
+
 ## Module Structure
 
 ```
 src/akwb/extraction/
   __init__.py        # Public API
+  document.py        # Canonical Document Model + DocumentReader + CanonicalValidator + CanonicalSegmenter
   models.py          # NormalizedContent, Segment, ExtractionCandidate, ExtractionResult
   plugins.py         # Reader, Segmenter, Extractor, CandidateBuilder, CandidateValidator ports
   readers.py         # TextReader, BinaryReader, StructuredReader
-  segmenters.py      # Heading, Paragraph, Code, Table, Structural, Semantic, Adaptive segmenters
+  markdown.py        # MarkdownParser, MarkdownCanonicalMapper, MarkdownReader
+  segmenters.py      # Heading, Paragraph, Code, Table, Structural, Semantic, Adaptive, Canonical segmenters
   extractors.py      # RuleBasedExtractor
   builders.py        # DefaultKnowledgeObjectBuilder and candidate validators
   pipeline.py        # ExtractionContext and ExtractionPipeline orchestrator

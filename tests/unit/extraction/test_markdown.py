@@ -1,6 +1,7 @@
 """Tests for the Enterprise Markdown AST parser."""
 
 from akwb.domain.models import Artifact
+from akwb.extraction.document import CanonicalDocument
 from akwb.extraction.markdown import (
     MarkdownASTMapper,
     MarkdownASTVisitor,
@@ -186,11 +187,12 @@ def test_mapper_returns_normalized_content() -> None:
     assert isinstance(normalized.content, MarkdownDocument)
 
 
-def test_reader_produces_markdown_content() -> None:
+def test_reader_produces_canonical_document() -> None:
     artifact = Artifact(name="x.md", relative_path="x.md", mime_type="text/markdown")
     reader = MarkdownReader()
     normalized = reader.read(artifact, b"# T\n\np")
-    assert normalized.kind == ContentKind.MARKDOWN
+    assert normalized.kind == ContentKind.DOCUMENT
+    assert isinstance(normalized.content, CanonicalDocument)
     assert normalized.content.children[0].type == "heading"
 
 

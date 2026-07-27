@@ -12,9 +12,10 @@ from akwb.extraction.builders import (
     RegisteredTypeCandidateValidator,
     RequiredFieldsCandidateValidator,
 )
+from akwb.extraction.document import CanonicalSegmenter, CanonicalValidator
 from akwb.extraction.extractors import RuleBasedExtractor
-from akwb.extraction.markdown import MarkdownReader, MarkdownSegmenter
-from akwb.extraction.models import ExtractionResult
+from akwb.extraction.markdown import MarkdownReader
+from akwb.extraction.models import ContentKind, ExtractionResult
 from akwb.extraction.plugins import (
     CandidateBuilder,
     CandidateValidator,
@@ -77,9 +78,12 @@ class ExtractionPipeline:
             StructuredReader(),
         ]
 
+        # All document content must be normalized to a CanonicalDocument before
+        # extraction. The CanonicalSegmenter is the only document segmenter; the
+        # legacy MarkdownSegmenter is no longer registered.
         self.adaptive_segmenter = AdaptiveSegmenter(
             [
-                MarkdownSegmenter(),
+                CanonicalSegmenter(),
                 HeadingSegmenter(),
                 ParagraphSegmenter(),
                 CodeSegmenter(),
@@ -88,6 +92,8 @@ class ExtractionPipeline:
             ]
         )
         self.segmenters: list[Segmenter] = [self.adaptive_segmenter]
+
+        self.canonical_validator = CanonicalValidator()
 
         self.extractors: list[Extractor] = [RuleBasedExtractor()]
 
@@ -162,6 +168,22 @@ class ExtractionPipeline:
             )
 
         normalized = reader.read(artifact, content, context)
+
+        # Validate the canonical document contract before extraction.
+        if normalized.kind == ContentKind.DOCUMENT:
+            canonical_validation = self.canonical_validator.validate(
+                normalized.content,
+                source_ref=artifact.relative_path,
+            )
+            for diag in canonical_validation.diagnostics:
+                context.emit(diag)
+            if not canonical_validation.ok:
+                return ExtractionResult(
+                    ok=False,
+                    objects=[],
+                    diagnostics=context.diagnostics,
+                    candidate_count=0,
+                )
 
         segments: list[Any] = []
         for segmenter in self.segmenters:
@@ -238,6 +260,10 @@ class ExtractionPipeline:
             candidate_count=len(candidates),
         )
 
+    def can_extract(self, mime_type: str) -> bool:
+        """Return whether the pipeline has a reader for ``mime_type``."""
+        return any(reader.can_read(mime_type) for reader in self.readers)
+
     def _resolve_reader(self, mime_type: str) -> Reader | None:
         for reader in self.readers:
             if reader.can_read(mime_type):
@@ -276,6 +302,7 @@ class ExtractionPipeline:
         return "unknown"
 
     def _error(self, artifact: Artifact, message: str) -> ExtractionResult:
+        """Record an extraction failure for an unsupported artifact."""
         diag = Diagnostic(
             "error",
             "extraction_failed",

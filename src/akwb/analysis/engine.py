@@ -186,10 +186,23 @@ class AnalyzeEngine:
                 processed += 1
                 continue
 
+            pipeline = self.container.extraction_pipeline
+            mime_type = mimetypes.guess_type(Path(entry.relative_path).name)[0] or "text/plain"
+            if not pipeline.can_extract(mime_type):
+                diagnostics.append(
+                    Diagnostic(
+                        "warning",
+                        "unsupported_mime_type",
+                        f"Skipped {rel}: no reader for {mime_type!r}",
+                        source_ref=rel,
+                    )
+                )
+                continue
+
             pipeline_result = self._run_pipeline(
                 entry,
                 content,
-                self.container.extraction_pipeline,
+                pipeline,
                 project_root.name,
             )
             diagnostics.extend(pipeline_result.diagnostics)
@@ -503,8 +516,8 @@ class AnalyzeEngine:
             Artifact(name="source_catalog.jsonl", relative_path="index/source_catalog.jsonl", mime_type="application/jsonl"),
             Artifact(name="catalog.jsonl", relative_path="knowledge/catalog.jsonl", mime_type="application/jsonl"),
             Artifact(name="graph.jsonl", relative_path="graph/graph.jsonl", mime_type="application/jsonl"),
-            Artifact(name="graph_nodes.jsonl", relative_path="graph/graph_nodes.jsonl", mime_type="application/jsonl"),
-            Artifact(name="graph_edges.jsonl", relative_path="graph/graph_edges.jsonl", mime_type="application/jsonl"),
+            Artifact(name="graph_nodes.jsonl", relative_path="knowledge/graph_nodes.jsonl", mime_type="application/jsonl"),
+            Artifact(name="graph_edges.jsonl", relative_path="knowledge/graph_edges.jsonl", mime_type="application/jsonl"),
             Artifact(name="graph.dot", relative_path="graph/graph.dot", mime_type="text/vnd.graphviz"),
             Artifact(name="graph.cypher", relative_path="graph/graph.cypher", mime_type="text/plain"),
             Artifact(name="summary.md", relative_path="reports/summary.md", mime_type="text/markdown"),

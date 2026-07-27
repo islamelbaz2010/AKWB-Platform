@@ -11,17 +11,15 @@ from mdit_py_plugins.gfm import gfm_plugin
 from pydantic import BaseModel, ConfigDict, Field
 
 from akwb.domain.models import Artifact
+from akwb.extraction.document import CanonicalDocument, DocumentReader, MarkdownCanonicalMapper
 from akwb.extraction.models import (
     ContentKind,
     NormalizedContent,
     Segment,
     SegmentType,
 )
-from akwb.extraction.plugins import Reader, Segmenter
+from akwb.extraction.plugins import Segmenter
 from akwb.types import make_id
-
-if __name__ == "__main__":
-    pass
 
 
 class MarkdownNode(BaseModel):
@@ -477,8 +475,12 @@ class MarkdownASTMapper:
         )
 
 
-class MarkdownReader(Reader):
-    """Reader plugin that parses Markdown artifacts into an AST."""
+class MarkdownReader(DocumentReader):
+    """Reader plugin that parses Markdown artifacts into a Canonical Document.
+
+    Markdown now enters the extraction pipeline through the Canonical Document
+    Model, the same path that future DOCX, PDF, HTML, and email readers will use.
+    """
 
     supported_mime_types = (
         "text/markdown",
@@ -486,28 +488,28 @@ class MarkdownReader(Reader):
     )
 
     def __init__(self, parser: MarkdownParser | None = None) -> None:
-        self.mapper = MarkdownASTMapper(parser or MarkdownParser())
+        self._parser = parser or MarkdownParser()
+        self._mapper = MarkdownCanonicalMapper()
 
     def can_read(self, mime_type: str) -> bool:
         return mime_type in self.supported_mime_types
 
-    def read(
+    def read_canonical(
         self,
         artifact: Artifact,
         content: bytes | str,
         context: Any | None = None,
-    ) -> NormalizedContent:
-        from akwb.extraction.pipeline import ExtractionContext
-
+    ) -> CanonicalDocument:
         text = content.decode("utf-8") if isinstance(content, bytes) else content
         source_uri = artifact.relative_path or artifact.name
-        project_id = None
-        if isinstance(context, ExtractionContext):
-            project_id = context.project_id
-        normalized = self.mapper.map(text, artifact, source_uri=source_uri)
+        markdown_document = self._parser.parse(text, source_uri=source_uri)
+        canonical_document = self._mapper.map(markdown_document)
+        if not canonical_document.source_uri:
+            canonical_document.source_uri = source_uri
+        project_id = getattr(context, "project_id", None)
         if project_id:
-            normalized.metadata["project_id"] = project_id
-        return normalized
+            canonical_document.metadata["project_id"] = project_id
+        return canonical_document
 
 
 class MarkdownSegmenter(Segmenter):

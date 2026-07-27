@@ -56,6 +56,7 @@ Define how AKWB materializes analyzed knowledge into a project-owned workspace c
   graph/
     graph.jsonl
     graph.dot
+    graph.cypher
   cache/
     parsed/
     extracted/

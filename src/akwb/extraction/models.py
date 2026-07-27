@@ -19,6 +19,7 @@ class ContentKind(str, Enum):
     BINARY = "binary"
     STRUCTURED = "structured"
     MARKDOWN = "markdown"
+    DOCUMENT = "document"
     MULTIMODAL = "multimodal"
 
 
@@ -40,6 +41,7 @@ class SegmentType(str, Enum):
     STRUCTURAL = "structural"
     SEMANTIC = "semantic"
     ADAPTIVE = "adaptive"
+    DOCUMENT = "document"
     OTHER = "other"
 
 

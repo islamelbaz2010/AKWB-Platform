@@ -56,11 +56,12 @@ Define how AKWB automatically scans a project, identifies knowledge sources, and
 
 - Project root detection uses a ranked list of markers (`.git`, `pyproject.toml`, `package.json`, `pom.xml`, `go.mod`, `Cargo.toml`, etc.) and stops at the filesystem root if none are found.
 - File encoding is detected with `charset-normalizer` or `chardet`; UTF-8 is assumed only when detection is ambiguous.
-- Default ignore patterns include `.git`, `.akwb`, `node_modules`, `vendor`, `target`, `__pycache__`, `.pytest_cache`, `dist`, `build`, `.venv`, and common IDE directories.
+- Discovery delegates all ignore decisions to `akwb.discovery.ignore_policy.IgnorePolicy` (exposed through the legacy `IgnoreEngine` facade for backwards compatibility).
+- `IgnorePolicy` combines layered rules in priority order: user explicit overrides (`!pattern`), user ignore patterns (from `.akwbignore` and config), repository `.gitignore` patterns, and built-in defaults.
+- Built-in ignore patterns cover OS artifacts (`.DS_Store`, `Thumbs.db`), editor metadata (`.idea/`, `.vscode/`, `*.swp`), caches (`__pycache__`, `.pytest_cache`), generated folders (`node_modules/`, `dist/`, `build/`, `.venv/`, `target/`), archives, and the workspace directory (`.akwb/`).
+- Pattern syntax supports directory-only (`dir/`), anchored (`/path/to/file`), and negation (`!pattern`) forms using `fnmatch` semantics.
+- Archive files and binary files are detected safely via content sampling and ignored without noisy diagnostics.
 - Filter precedence: explicit `includePatterns` > explicit `ignorePatterns` > `.gitignore` > built-in defaults.
 - Dependency manifest files (`requirements.txt`, `package.json`, `pom.xml`, etc.) are classified as `config` but tagged for dependency extraction.
-- Generated directories are identified by detector heuristics (e.g., `node_modules` contains a `.package-lock` sentinel) and skipped unless explicitly included.
-- Detectors vote with confidence; the highest-confidence non-conflicting hints win.
-- Ignore patterns follow `.gitignore` syntax plus `akwb`-specific configuration.
 - Fingerprint uses `sha256` of content plus file size; mtime is used only for quick skip candidates.
 - Binary files are excluded by default unless a detector explicitly claims and handles them.
