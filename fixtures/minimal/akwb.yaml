@@ -1,0 +1,3 @@
+log_level: INFO
+workspace_dir: .akwb
+project_name: minimal-fixture

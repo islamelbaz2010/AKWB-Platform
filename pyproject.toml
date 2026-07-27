@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "akwb"
+version = "1.0.0"
+description = "AKWB Platform — local-first, project-owned knowledge workspace"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "AKWB Team"},
+]
+keywords = ["knowledge", "workspace", "knowledge-graph", "extraction", "static-analysis", "documentation", "cli"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "click>=8.1.0",
+    "markdown-it-py>=3.0.0",
+    "mdit-py-plugins>=0.4.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "ruff>=0.4.0", "mypy>=1.0", "types-PyYAML>=6.0"]
+
+[project.scripts]
+akwb = "akwb.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/akwb/akwb-platform"
+Repository = "https://github.com/akwb/akwb-platform"
+Documentation = "https://github.com/akwb/akwb-platform/tree/main/docs"
+Issues = "https://github.com/akwb/akwb-platform/issues"
+Changelog = "https://github.com/akwb/akwb-platform/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+exclude = ["tests/.*"]

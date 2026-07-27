@@ -1,0 +1,12 @@
+name: knowledge_test_plugin
+version: "1.0.0"
+plugin_api_version: "1"
+description: Test plugin contributing knowledge types, relationship types, evidence types, and a validator.
+entry_point: plugin
+ports:
+  - knowledge_type_provider
+  - relationship_type_provider
+  - evidence_type_provider
+  - knowledge_validator_provider
+permissions:
+  - filesystem:read

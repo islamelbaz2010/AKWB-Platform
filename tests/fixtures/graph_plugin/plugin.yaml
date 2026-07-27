@@ -1,0 +1,9 @@
+name: graph_test_plugin
+version: "1.0.0"
+plugin_api_version: "1"
+description: Test graph query engine plugin demonstrating plugin extensibility.
+entry_point: plugin
+ports:
+  - graph_query_engine
+permissions:
+  - memory:read

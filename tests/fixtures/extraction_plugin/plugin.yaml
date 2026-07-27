@@ -1,0 +1,9 @@
+name: extraction_test_plugin
+version: "1.0.0"
+plugin_api_version: "1"
+description: Test plugin for extraction pipeline demonstrating a custom reader.
+entry_point: plugin
+ports:
+  - reader
+permissions:
+  - filesystem:read

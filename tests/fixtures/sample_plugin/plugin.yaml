@@ -1,0 +1,9 @@
+name: sample
+version: "1.0.0"
+plugin_api_version: "1"
+description: Sample plugin used in unit tests.
+entry_point: plugin.py
+ports:
+  - Detector
+permissions:
+  - filesystem:read

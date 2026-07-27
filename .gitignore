@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# AKWB workspace (user data)
+.akwb/
+
+# OS
+.DS_Store
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/

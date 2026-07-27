@@ -1,0 +1,1 @@
+"""Sample knowledge plugin fixture."""
